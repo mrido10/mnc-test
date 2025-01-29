@@ -3,6 +3,7 @@ package sqlRepository
 import (
 	"github.com/google/uuid"
 	"gorm.io/gorm"
+	"strings"
 	"test2/model"
 	"test2/model/entity"
 )
@@ -24,6 +25,9 @@ func NewUser(db *gorm.DB) Users {
 
 func (u User) Insert(tx *gorm.DB, user *entity.User) *model.Error {
 	if err := tx.Create(user).Error; err != nil {
+		if strings.Contains(err.Error(), "SQLSTATE 23505") {
+			return model.NewError(400, "phone number has been used", nil)
+		}
 		return model.NewError(500, "internal server error", err)
 	}
 	return nil

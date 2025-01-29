@@ -8,6 +8,7 @@ import (
 type Transaction struct {
 	ID              uuid.UUID `gorm:"type:uuid;default:uuid_generate_v4();primary_key"`
 	UserID          uuid.UUID
+	TargetUserID    uuid.UUID
 	TransactionType string
 	Amount          float64
 	Remarks         string

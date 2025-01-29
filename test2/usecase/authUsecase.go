@@ -2,6 +2,7 @@ package usecase
 
 import (
 	"encoding/json"
+	"github.com/google/uuid"
 	"test2/constanta"
 	"test2/model"
 	"test2/model/entity"
@@ -139,16 +140,16 @@ func (a Auth) validateLogin(u model.UserRequest) *model.Error {
 	return nil
 }
 
-func (a Auth) validateUserRegistered(phoneNumber string, allowRegistered bool) (entity.User, *model.Error) {
+func (a Auth) validateUserRegistered(phoneNumber string, isLogin bool) (entity.User, *model.Error) {
 	usr, err := a.repository.GetByPhoneNumber(phoneNumber)
 	if err != nil {
 		return entity.User{}, err
 	}
-	if !allowRegistered && util.IsEmptyString(usr.ID.String()) {
+	if !isLogin && usr.ID != uuid.Nil {
 		return entity.User{}, model.NewError(400, "user has been registered", nil)
 	}
 
-	if allowRegistered && util.IsEmptyString(usr.ID.String()) {
+	if isLogin && usr.ID == uuid.Nil {
 		return entity.User{}, model.NewError(400, "user not registered", nil)
 	}
 	return usr, nil

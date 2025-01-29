@@ -8,6 +8,7 @@ import (
 	"log"
 	"net/http"
 	"runtime/debug"
+	"strings"
 	"test2/model"
 	"test2/repository/cacheRepository"
 	"test2/util"
@@ -49,13 +50,20 @@ func UseToken(jwtToken util.JwtToken, cache cacheRepository.Cache) fiber.Handler
 			return nil
 		}
 
-		_, err = jwtToken.ParseToken(authorization[0])
+		tokens := strings.Split(authorization[0], " ")
+		if len(tokens) != 2 {
+			return model.NewError(401, "Unauthorized", nil)
+		}
+		if tokens[0] != "Bearer" {
+			return model.NewError(401, "Unauthorized", nil)
+		}
+
+		_, err = jwtToken.ParseToken(tokens[1])
 		if err != nil {
-			err = model.NewError(http.StatusInternalServerError, "Internal server error", nil)
 			return nil
 		}
 
-		authInfo, err := cache.Get(authorization[0])
+		authInfo, err := cache.Get(tokens[1])
 		if err != nil {
 			if err.Code == 404 {
 				err = model.NewError(http.StatusUnauthorized, "Unauthorized", nil)
@@ -94,6 +102,7 @@ func Serve(serve func(*fiber.Ctx) (interface{}, *model.Error)) fiber.Handler {
 				c.Status(err.Code)
 			}
 			_ = c.Locals("response", resp)
+			_ = c.JSON(resp)
 		}()
 
 		resp.Result, err = serve(c)

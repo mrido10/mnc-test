@@ -7,7 +7,6 @@ import (
 	"test2/model/entity"
 	"test2/repository/cacheRepository"
 	"test2/repository/sqlRepository"
-	"test2/util"
 )
 
 type Transactions interface {
@@ -71,10 +70,20 @@ func (t Transaction) DoTransactions(
 	if errs != nil {
 		return model.TransactionResponse{}, model.NewError(500, "Internal server error", errs)
 	}
-	// insert data transaction with type TOPUP
+
+	var targetUserID uuid.UUID
+	if tr.Type == "TRANSFER" {
+		targetUserID, errs = uuid.Parse(tr.UserID)
+		if errs != nil {
+			return model.TransactionResponse{}, model.NewError(400, "invalid target user", errs)
+		}
+	}
+
+	// insert data transaction with
 	transaction := entity.Transaction{
 		ID:              uuid.New(),
 		UserID:          userID,
+		TargetUserID:    targetUserID,
 		TransactionType: tr.Type,
 		Amount:          tr.Amount,
 		Remarks:         tr.Remarks,
@@ -90,15 +99,25 @@ func (t Transaction) DoTransactions(
 		return model.TransactionResponse{}, err
 	}
 
-	var topUpID, paymentID string
+	// update user if transfer
+	if tr.Type == "TRANSFER" {
+		if err = additionalFunction(tx, tr); err != nil {
+			return model.TransactionResponse{}, err
+		}
+	}
+
+	var topUpID, paymentID, transferID string
 	if tr.Type == "TOPUP" {
 		topUpID = transaction.ID.String()
-	} else {
+	} else if tr.Type == "PAYMENT" {
 		paymentID = transaction.ID.String()
+	} else {
+		transferID = transaction.ID.String()
 	}
 	return model.TransactionResponse{
 		TopUpID:       topUpID,
 		PaymentID:     paymentID,
+		TransferID:    transferID,
 		Amount:        transaction.Amount,
 		BalanceBefore: balance,
 		BalanceAfter:  newBalance,
@@ -118,8 +137,8 @@ func (t Transaction) getBalanceUserData(userID string) (float64, *model.Error) {
 	if err != nil {
 		return 0, err
 	}
-	if util.IsEmptyString(user.ID.String()) {
-		return 0, model.NewError(400, "unknown user", nil)
+	if user.ID == uuid.Nil {
+		return 0, model.NewError(400, "unknown target user", nil)
 	}
 	return user.Balance, nil
 }
@@ -133,10 +152,14 @@ func (Transaction) CalcBalancePaymentAndTransfer(b, nb float64) float64 {
 }
 
 func (t Transaction) TransferToAnotherUser(tx *gorm.DB, tr model.TransactionRequest) *model.Error {
+	if tr.TargetUser == tr.UserID {
+		return model.NewError(400, "target user is my self, not allowed to transfer", nil)
+	}
+
 	balance, err := t.getBalanceUserData(tr.TargetUser)
 	if err != nil {
 		return err
 	}
 	newBalance := balance + tr.Amount
-	return t.userRepository.UpdateBalance(tx, tr.UserID, newBalance)
+	return t.userRepository.UpdateBalance(tx, tr.TargetUser, newBalance)
 }
