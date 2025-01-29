@@ -12,9 +12,18 @@ type TransactionResponse struct {
 	TopUpID       string  `json:"top_up_id,omitempty"`
 	PaymentID     string  `json:"payment_id,omitempty"`
 	TransferID    string  `json:"transfer_id,omitempty"`
-	Amount        float64 `json:"amount"`
+	UserID        string  `json:"user_id,omitempty"`
+	Amount        float64 `json:"amount,omitempty"`
 	Remarks       string  `json:"remarks,omitempty"`
 	BalanceBefore float64 `json:"balance_before"`
 	BalanceAfter  float64 `json:"balance_after"`
 	CreatedDate   string  `json:"created_date"`
 }
+
+type TransactionListRequest struct {
+	Page  int `json:"page"`
+	Limit int `json:"limit"`
+	UserAccess
+}
+
+type TransactionListResponse TransactionResponse

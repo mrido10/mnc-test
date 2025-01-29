@@ -14,6 +14,7 @@ type Transactions interface {
 	CalcBalanceTopUp(b, nb float64) float64
 	CalcBalancePaymentAndTransfer(b, nb float64) float64
 	TransferToAnotherUser(tx *gorm.DB, tr model.TransactionRequest) *model.Error
+	GetList(tr model.TransactionListRequest) ([]model.TransactionListResponse, *model.Error)
 }
 type Transaction struct {
 	userRepository        sqlRepository.Users
@@ -162,4 +163,43 @@ func (t Transaction) TransferToAnotherUser(tx *gorm.DB, tr model.TransactionRequ
 	}
 	newBalance := balance + tr.Amount
 	return t.userRepository.UpdateBalance(tx, tr.TargetUser, newBalance)
+}
+
+func (t Transaction) GetList(tr model.TransactionListRequest) ([]model.TransactionListResponse, *model.Error) {
+	if tr.Page < 1 || tr.Limit < 1 {
+		return nil, model.NewError(400, "invalid parameter page or limit", nil)
+	}
+
+	list, err := t.transactionRepository.GetList(tr.UserID, sqlRepository.Clause{
+		Limit:  tr.Limit,
+		Offset: (tr.Page - 1) * tr.Limit,
+		Order:  "updated_at asc",
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	var results []model.TransactionListResponse
+	for _, l := range list {
+		var topup, pay, transfer string
+		if l.TransactionType == "TOPUP" {
+			topup = l.ID.String()
+		} else if l.TransactionType == "PAYMENT" {
+			pay = l.ID.String()
+		} else {
+			transfer = l.ID.String()
+		}
+
+		results = append(results, model.TransactionListResponse{
+			TopUpID:       topup,
+			PaymentID:     pay,
+			TransferID:    transfer,
+			UserID:        l.UserID.String(),
+			Remarks:       l.Remarks,
+			BalanceBefore: l.BalanceBefore,
+			BalanceAfter:  l.BalanceAfter,
+			CreatedDate:   l.CreatedAt.String(),
+		})
+	}
+	return results, nil
 }

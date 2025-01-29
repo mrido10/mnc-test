@@ -2,6 +2,7 @@ package controller
 
 import (
 	"github.com/gofiber/fiber/v2"
+	"strconv"
 	"test2/model"
 	"test2/usecase"
 )
@@ -48,4 +49,16 @@ func (a TransactionController) Transfer(c *fiber.Ctx) (interface{}, *model.Error
 		req,
 		a.transaction.CalcBalancePaymentAndTransfer,
 		a.transaction.TransferToAnotherUser)
+}
+
+func (a TransactionController) List(c *fiber.Ctx) (interface{}, *model.Error) {
+	var req model.TransactionListRequest
+	page, _ := strconv.ParseInt(c.Query("page"), 10, 64)
+	limit, _ := strconv.ParseInt(c.Query("limit"), 10, 64)
+
+	req.Page = int(page)
+	req.Limit = int(limit)
+	req.UserAccess, _ = c.Locals("auth").(model.UserAccess)
+
+	return a.transaction.GetList(req)
 }
