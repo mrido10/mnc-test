@@ -35,7 +35,10 @@ type Auth struct {
 func init() {
 	fl, err := os.ReadFile("./config/config.yml")
 	if err != nil {
-		log.Fatal(err)
+		fl, err = os.ReadFile("../config/config.yml")
+		if err != nil {
+			log.Fatal(err)
+		}
 	}
 	if err = yaml.Unmarshal([]byte(os.ExpandEnv(string(fl))), &Conf); err != nil {
 		log.Fatal(err)
