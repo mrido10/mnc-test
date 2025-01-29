@@ -7,6 +7,15 @@ go run main.go
 ```
 
 ## Soal 2
+
+### Tech Stack 
+
+- Language: Golang
+- Framework: go fiber, gorm
+- Database: postgresql
+
+### Run Apps
+
 Before run the apps `test2`, you can change directory in `~/test2`, then run command
 ```shell
 go mod tidy
