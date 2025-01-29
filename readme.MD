@@ -15,8 +15,8 @@ go run main.go
 - Database: postgresql
 
 ### Run Apps
-
-Before run the apps `test2`, you can change directory in `~/test2`, then run command
+Import postman colletion, you can find in `~/mnc-test/test2.postman_collection.json`.
+Before run the apps `test2`, you can change directory in `~/mnc-test/test2`, then run command
 ```shell
 go mod tidy
 
