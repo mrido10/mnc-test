@@ -1,0 +1,12 @@
+database:
+  dsn: host=${PG_HOST} user=${PG_USER} password=${PG_PASS} dbname=${PG_DB} port=${PG_PORT} sslmode=disable
+  max_idle: 10
+  max_open_connection: 100
+  max_life_time_connection: 1
+cache:
+  address: ${REDIS_HOST}:${REDIS_PORT}
+  password:
+  db: 0
+auth:
+  secret_key: ${AUTH_SECRET_KEY}
+  hash_secret: ${AUTH_HASH_SECRET}

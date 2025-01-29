@@ -1,0 +1,31 @@
+version: '3.3'
+services:
+  db:
+    image: postgres:15.4
+    container_name: postgresql-mnc
+    environment:
+      POSTGRES_USER: idopsql
+      POSTGRES_PASSWORD: thepassword
+      POSTGRES_DB: mnc-db
+      PGDATA: /data/postgres
+    volumes:
+      - postgre-db:/data/postgres
+    ports:
+      - "5433:5432"
+    networks:
+      - mncnet
+  cache:
+    container_name: redis-mnc
+    image: redis:latest
+    command: redis-server /usr/local/etc/redis/redis.conf
+    ports:
+      - "6379:6379"
+    volumes:
+      - $PWD/configs/redis.conf:/usr/local/etc/redis/redis.conf
+    networks:
+      - mncnet
+volumes:
+  postgre-db:
+  cache:
+networks:
+  mncnet:
