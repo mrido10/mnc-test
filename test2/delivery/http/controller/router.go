@@ -37,4 +37,5 @@ func (r *Route) SetupRoute() {
 func (r *RouteWithToken) SetupRouteWithToken() {
 	r.Post("/topup", middleware.Serve(r.transaction.TopUp))
 	r.Post("/pay", middleware.Serve(r.transaction.Payment))
+	r.Post("/transfer", middleware.Serve(r.transaction.Transfer))
 }

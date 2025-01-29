@@ -1,9 +1,10 @@
 package model
 
 type TransactionRequest struct {
-	Amount  float64 `json:"amount"`
-	Remarks string  `json:"remarks"`
-	Type    string
+	TargetUser string  `json:"target_user"`
+	Amount     float64 `json:"amount"`
+	Remarks    string  `json:"remarks"`
+	Type       string
 	UserAccess
 }
 

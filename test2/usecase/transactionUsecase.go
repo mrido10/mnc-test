@@ -2,6 +2,7 @@ package usecase
 
 import (
 	"github.com/google/uuid"
+	"gorm.io/gorm"
 	"test2/model"
 	"test2/model/entity"
 	"test2/repository/cacheRepository"
@@ -10,9 +11,10 @@ import (
 )
 
 type Transactions interface {
-	DoTransactions(tu model.TransactionRequest, calcBalance func(b, nb float64) float64) (model.TransactionResponse, *model.Error)
+	DoTransactions(tu model.TransactionRequest, calcBalance func(b, nb float64) float64, additionalFunction func(tx *gorm.DB, tr model.TransactionRequest) *model.Error) (model.TransactionResponse, *model.Error)
 	CalcBalanceTopUp(b, nb float64) float64
-	CalcBalancePayment(b, nb float64) float64
+	CalcBalancePaymentAndTransfer(b, nb float64) float64
+	TransferToAnotherUser(tx *gorm.DB, tr model.TransactionRequest) *model.Error
 }
 type Transaction struct {
 	userRepository        sqlRepository.Users
@@ -35,7 +37,12 @@ func NewTransaction(
 	}
 }
 
-func (t Transaction) DoTransactions(tr model.TransactionRequest, calcBalance func(b, nb float64) float64) (model.TransactionResponse, *model.Error) {
+func (t Transaction) DoTransactions(
+	tr model.TransactionRequest,
+	calcBalance func(b, nb float64) float64,
+	additionalFunction func(tx *gorm.DB, tr model.TransactionRequest) *model.Error,
+) (model.TransactionResponse, *model.Error) {
+
 	// validate request
 	if err := t.validateRequest(tr); err != nil {
 		return model.TransactionResponse{}, err
@@ -47,6 +54,9 @@ func (t Transaction) DoTransactions(tr model.TransactionRequest, calcBalance fun
 		return model.TransactionResponse{}, err
 	}
 	newBalance := calcBalance(balance, tr.Amount)
+	if newBalance < 0 {
+		return model.TransactionResponse{}, model.NewError(400, "balance is not enough", nil)
+	}
 
 	tx := t.sqlRepo.DBBeginTX()
 	defer func() {
@@ -118,6 +128,15 @@ func (Transaction) CalcBalanceTopUp(b, nb float64) float64 {
 	return b + nb
 }
 
-func (Transaction) CalcBalancePayment(b, nb float64) float64 {
-	return b + nb
+func (Transaction) CalcBalancePaymentAndTransfer(b, nb float64) float64 {
+	return b - nb
+}
+
+func (t Transaction) TransferToAnotherUser(tx *gorm.DB, tr model.TransactionRequest) *model.Error {
+	balance, err := t.getBalanceUserData(tr.TargetUser)
+	if err != nil {
+		return err
+	}
+	newBalance := balance + tr.Amount
+	return t.userRepository.UpdateBalance(tx, tr.UserID, newBalance)
 }
